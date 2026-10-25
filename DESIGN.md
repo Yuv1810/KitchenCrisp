@@ -1,21 +1,21 @@
-# Kitchen Krisp design direction
+# Kitchen Crisp design direction
 
 ## Brief
 
-Kitchen Krisp is a small Indian food and premix shop. Customers need to understand the product, compare pack prices, add items, and place a COD order. The design should feel like a printed pantry catalogue: specific, practical and recognisable. The supplied red wordmark is the brand cue. Photography and sample product content remain placeholders until the real catalogue is supplied.
+Kitchen Crisp is a small Indian food and premix shop. Customers need to understand the product, compare pack prices, add items, and place a COD order. The design should feel like a printed pantry catalogue: specific, practical and recognisable. The supplied red wordmark is the brand cue. Photography and sample product content remain placeholders until the real catalogue is supplied.
 
 ## Structure and journeys
 
-The home page introduces both premixes and ready-to-eat food with an immediate shop link. A numbered index highlights premixes, cookies and cakes. Catalogue filters distinguish preparation type from food category; product labels and detail instructions make clear whether cooking is required. Product details, bag and delivery forms use dialogs. The kitchen note, ordering instructions and FAQs answer questions after the products. Admin work lives at `/admin`.
+The home page introduces both premixes and ready-to-eat food with an immediate shop link. A numbered index highlights breakfast, premixes, food platters and cookies. Catalogue filters distinguish preparation type from food category; product labels and detail instructions make clear whether cooking is required. Product details, bag and delivery forms use dialogs. The kitchen note, ordering instructions and FAQs answer questions after the products. Admin work lives at `/admin`.
 
 Key flows: category/search → product → bag → verified account → address → COD confirmation; email/password → emailed OTP → account/orders; verified admin → products → add/edit/visibility → storefront.
 
 ## Visual system
 
 - Chilli red `#b3341d`: brand, primary actions and focus.
-- Pantry paper `#f5f0e3`: background. Brown ink `#332b23`: text and rules.
-- Turmeric yellow `#edbf52`: photo caption and ordering strip.
-- Secondary text `#6c6257`; separator `#d5cbbc`.
+- Soft mint green `#f2f8f5`: background. Forest charcoal `#1c2b22`: text and rules.
+- Mint accent `#e3f1e9`: photo caption and ordering strip.
+- Secondary text `#4f6458`; separator `#cbe0d3`.
 - Bricolage Grotesque for headings and product names; DM Sans for information and controls; Georgia only for the logo.
 - Rectangular photography, square controls, thin rules, no decorative floating stamps, stars or unsupported reviews.
 - Space separates sections; imagery and type provide hierarchy. Body copy is readable and concise. Tiny labels are supplemental, never the sole source of product or order information.

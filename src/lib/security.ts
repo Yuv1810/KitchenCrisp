@@ -20,10 +20,12 @@ export async function passwordMatches(password: string, stored: string) {
   const expected = Buffer.from(hex, "hex");
   return expected.length === key.length && timingSafeEqual(key, expected);
 }
+export const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || process.env.ADMIN_EMAILS || "kitchen5062001crisp@gmail.com").split(",")[0].trim().toLowerCase();
 export function adminEmails() {
-  const emails = [...new Set((process.env.ADMIN_EMAILS || "engyuvrajsingh@gmail.com").split(",").map(x => x.trim().toLowerCase()).filter(Boolean))];
-  if (emails.length > 2) throw new ApiError(503, "Only two admin email addresses may be configured.");
-  return emails;
+  return [ADMIN_EMAIL];
+}
+export function adminFixedPassword() {
+  return process.env.ADMIN_PASSWORD || "KitchenCrisp@5062001";
 }
 export async function currentUser() {
   const token = (await cookies()).get("kk_session")?.value;

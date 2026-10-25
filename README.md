@@ -1,4 +1,4 @@
-# Kitchen Krisp
+# Kitchen Crisp
 
 A responsive food and premix store built with Next.js App Router, TypeScript, PostgreSQL, Prisma, and Nodemailer.
 
@@ -6,8 +6,8 @@ A responsive food and premix store built with Next.js App Router, TypeScript, Po
 
 - Email/password signup and login, with a six-digit email OTP on **every login**, including admins. Codes expire after 10 minutes, allow five attempts, and are stored as keyed hashes.
 - Password reset through email OTP; resetting a password revokes previous sessions. Passwords use salted scrypt. Session tokens are random, stored hashed, and sent through HttpOnly cookies.
-- At most two admin addresses configured through `ADMIN_EMAILS`. The first is `engyuvrajsingh@gmail.com`. Admin privileges are checked on the server for every request, based on the configured allowlist.
-- Admin product creation/editing, prices, categories, image URLs or image uploads, and hiding unavailable products. Products support both premixes and ready-to-eat food, including cookies, cakes and baked treats. Customers can filter by preparation type or category, search and sort products.
+- Single admin address configured through `ADMIN_EMAILS` (`kitchen5062001crisp@gmail.com`) with a fixed admin password. Public signup for admin is disabled.
+- Admin product creation/editing, prices, categories, image URLs or image uploads, and hiding unavailable products. Products support both premixes and ready-to-eat food, including cookies, food platters and baked treats. Customers can filter by preparation type or category (including Breakfast and Food Platter), search and sort products.
 - Guest bags saved in the browser; verified customers have database-backed carts. Guest carts merge when customers sign in. Admin cart emails are sent for saved cart activity, at most once per product per customer per day.
 - Cash-on-delivery checkout with name, mobile, full address, city, state, PIN and optional delivery notes. No payment gateway.
 - Checkout reads current prices on the server, rejects stale totals, and stores immutable product-name, image and unit-price snapshots in `OrderItem`. Historical orders are unaffected by later product changes. Integer paise avoid floating-point currency errors.
@@ -62,7 +62,7 @@ npm audit
 
 The scripts use webpack because Turbopack junction creation is restricted in this Windows workspace. The production build succeeds with webpack.
 
-`npm run test:integration` exercises real API/database flows and captures messages in an SMTP server on 127.0.0.1:1025. It requires the isolated database on port 55432, the app running with SMTP host 127.0.0.1, port 1025, user/password `local-test`, and `EMAIL_FROM="Kitchen Krisp <test@kitchen.example>"`. The test refuses a real admin account, uses disposable records and cleans up its fixtures. It sends **no real email**. Restore your normal SMTP configuration after running it.
+`npm run test:integration` exercises real API/database flows and captures messages in an SMTP server on 127.0.0.1:1025. It requires the isolated database on port 55432, the app running with SMTP host 127.0.0.1, port 1025, user/password `local-test`, and `EMAIL_FROM="Kitchen Crisp <test@kitchen.example>"`. The test refuses a real admin account, uses disposable records and cleans up its fixtures. It sends **no real email**. Restore your normal SMTP configuration after running it.
 
 Verified: signup/login/reset, OTP delivery and one-time use, customer/admin isolation, origin protection, product CRUD, cart emails, COD orders, duplicate checkout protection, historical price/name preservation, stale-price rejection, unavailable-product handling, and session revocation.
 

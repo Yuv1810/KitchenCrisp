@@ -2,7 +2,18 @@ import nodemailer from "nodemailer";
 import { db } from "./db";
 import { ApiError } from "./security";
 export async function sendEmail(to: string, subject: string, text: string) {
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS || !process.env.EMAIL_FROM) throw new ApiError(503, "Email delivery is not configured. Please contact the store.");
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS || !process.env.EMAIL_FROM) {
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`\n======================================================`);
+      console.log(`📨 [LOCAL DEV EMAIL SIMULATOR]`);
+      console.log(`To: ${to}`);
+      console.log(`Subject: ${subject}`);
+      console.log(`Body:\n${text}`);
+      console.log(`======================================================\n`);
+      return;
+    }
+    throw new ApiError(503, "Email delivery is not configured. Please contact the store.");
+  }
   const transport = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 587), secure: process.env.SMTP_PORT === "465", auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }, connectionTimeout: 10000, socketTimeout: 15000 });
   await transport.sendMail({ from: process.env.EMAIL_FROM, to, subject, text });
 }

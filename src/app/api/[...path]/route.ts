@@ -5,16 +5,16 @@ import { Prisma, OtpPurpose } from "@prisma/client";
 import { z } from "zod";
 import { db, databaseConfigured } from "@/lib/db";
 import { sampleProducts, orderTotals, money, productCategories } from "@/lib/products";
-import { ApiError, adminEmails, createSession, currentUser, hashToken, passwordHash, passwordMatches, rateLimit, requireUser } from "@/lib/security";
+import { ApiError, adminEmails, ADMIN_EMAIL, adminFixedPassword, createSession, currentUser, hashToken, passwordHash, passwordMatches, rateLimit, requireUser } from "@/lib/security";
 import { flushEmails, sendEmail } from "@/lib/email";
 export const runtime = "nodejs";
 const emailSchema = z.string().trim().toLowerCase().email().max(254);
-const passwordSchema = z.string().min(10, "Use at least 10 characters for your password.").max(128);
+const passwordSchema = z.string().min(8, "Use at least 8 characters for your password.").max(128);
 const productSchema = z.object({ name: z.string().trim().min(2).max(100), description: z.string().trim().min(10).max(2000), price: z.number().int().min(100).max(10000000), image: z.string().max(2000000).refine(x => /^https:\/\//.test(x) || /^\/images\//.test(x) || /^data:image\/(png|jpeg|webp);base64,/.test(x), "Use an HTTPS image URL or a JPG, PNG or WebP upload."), category: z.enum(productCategories), productType: z.enum(["PREMIX", "READY_TO_EAT"]).default("PREMIX"), weight: z.string().min(1).max(40), badge: z.string().max(40).nullable(), active: z.boolean().optional() });
 async function issueOtp(email: string, purpose: OtpPurpose) {
   const otp = String(randomInt(100000, 1000000));
   await db.otp.upsert({ where: { email_purpose: { email, purpose } }, create: { email, purpose, codeHash: hashToken(`${email}:${purpose}:${otp}`), expiresAt: new Date(Date.now() + 10 * 60000) }, update: { codeHash: hashToken(`${email}:${purpose}:${otp}`), attempts: 0, expiresAt: new Date(Date.now() + 10 * 60000) } });
-  await sendEmail(email, "Your Kitchen Krisp verification code", `Your verification code is ${otp}. It expires in 10 minutes. Do not share it with anyone.\n\nIf you did not request this, ignore this email.\nKitchen Krisp`);
+  await sendEmail(email, "Your Kitchen Crisp verification code", `Your verification code is ${otp}. It expires in 10 minutes.\n\nKitchen Crisp`);
 }
 async function consumeOtp(email: string, purpose: OtpPurpose, code: string, newPassword?: string) {
   const result = await db.$transaction(async tx => {
@@ -60,12 +60,35 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
       await rateLimit(`ip:${req.headers.get("x-forwarded-for")?.split(",")[0] || "local"}`, 30);
       let user = await db.user.findUnique({ where: { email: data.email } });
       if (data.mode === "signup") {
-        const password = passwordSchema.parse(data.password); const name = z.string().min(2).max(80).parse(data.name);
+        if (adminEmails().includes(data.email)) {
+          throw new ApiError(400, "Admin accounts cannot be registered via public signup. Please sign in directly.");
+        }
+        const password = passwordSchema.parse(data.password);
+        const name = data.name?.trim() || data.email.split("@")[0];
         if (user?.verified) throw new ApiError(400, "An account already exists. Please sign in or reset your password.");
         const hash = await passwordHash(password);
-        user = await db.user.upsert({ where: { email: data.email }, create: { email: data.email, name, passwordHash: hash, role: adminEmails().includes(data.email) ? "ADMIN" : "USER" }, update: { name, passwordHash: hash } });
+        user = await db.user.upsert({ where: { email: data.email }, create: { email: data.email, name, passwordHash: hash, role: "USER" }, update: { name, passwordHash: hash } });
         await issueOtp(data.email, "SIGNUP");
       } else if (data.mode === "login") {
+        if (adminEmails().includes(data.email)) {
+          const fixedPass = adminFixedPassword();
+          const matches = data.password === fixedPass || (user && await passwordMatches(data.password || "", user.passwordHash));
+          if (!matches) throw new ApiError(400, "Incorrect admin password.");
+          if (!user) {
+            const hash = await passwordHash(fixedPass);
+            user = await db.user.create({
+              data: { email: data.email, name: "Kitchen Crisp Admin", passwordHash: hash, role: "ADMIN", verified: true }
+            });
+          } else if (user.role !== "ADMIN" || !user.verified) {
+            user = await db.user.update({ where: { id: user.id }, data: { role: "ADMIN", verified: true } });
+          }
+          await createSession(user.id);
+          return NextResponse.json({
+            ok: true,
+            directLogin: true,
+            user: { id: user.id, name: user.name, email: user.email, role: "ADMIN" }
+          });
+        }
         if (!user || !await passwordMatches(data.password || "", user.passwordHash)) throw new ApiError(400, "Email or password is incorrect.");
         await issueOtp(data.email, "LOGIN");
       } else if (user?.verified) await issueOtp(data.email, "RESET");
@@ -91,7 +114,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
         const existing = await tx.cartItem.findUnique({ where: { userId_productId: { userId: user.id, productId: data.productId } } });
         const notify = !existing?.notifiedAt || existing.notifiedAt.getTime() < Date.now() - 86400000;
         await tx.cartItem.upsert({ where: { userId_productId: { userId: user.id, productId: data.productId } }, create: { userId: user.id, productId: data.productId, quantity: data.quantity, notifiedAt: new Date() }, update: { quantity: data.quantity, ...(notify ? { notifiedAt: new Date() } : {}) } });
-        if (notify) for (const to of adminEmails()) await tx.emailJob.create({ data: { to, subject: "Kitchen Krisp • Cart activity", text: `${user.name} (${user.email}) added ${product.name} to their cart. Quantity: ${data.quantity}. This is cart activity, not an order.` } });
+        if (notify) for (const to of adminEmails()) await tx.emailJob.create({ data: { to, subject: "Kitchen Crisp • Cart activity", text: `${user.name} (${user.email}) added ${product.name} to their cart. Quantity: ${data.quantity}. This is cart activity, not an order.` } });
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       await flushEmails(); return NextResponse.json({ ok: true });
     }
@@ -110,8 +133,8 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
         const order = await tx.order.create({ data: { ...address, userId: user.id, total: totals.total, shipping: totals.shipping, items: { create: items } }, include: { items: true } });
         await tx.cartItem.deleteMany({ where: { userId: user.id } });
         const text = `Order ${order.id}\n${items.map(x => `${x.productName} x ${x.quantity}: ${money(x.unitPrice * x.quantity)}`).join("\n")}\nDelivery: ${money(totals.shipping)}\nTotal: ${money(totals.total)}\nPayment: Cash on delivery\n\n${data.name}\n${data.phone}\n${data.address}, ${data.city}, ${data.state} ${data.pincode}\n${data.notes || ""}`;
-        await tx.emailJob.create({ data: { to: user.email, subject: "Your Kitchen Krisp order is received", text: `Thank you! We will contact you by email to confirm delivery.\n\n${text}` } });
-        for (const to of adminEmails()) await tx.emailJob.create({ data: { to, subject: "New Kitchen Krisp COD order", text: `Contact customer at ${user.email} to confirm delivery.\n\n${text}` } });
+        await tx.emailJob.create({ data: { to: user.email, subject: "Your Kitchen Crisp order is received", text: `Thank you! We will contact you by email to confirm delivery.\n\n${text}` } });
+        for (const to of adminEmails()) await tx.emailJob.create({ data: { to, subject: "New Kitchen Crisp COD order", text: `Contact customer at ${user.email} to confirm delivery.\n\n${text}` } });
         return order;
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       await flushEmails(); return NextResponse.json({ order });
@@ -123,7 +146,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     if (path.startsWith("admin/orders/") && req.method === "PATCH") {
       const { status } = z.object({ status: z.enum(["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"]) }).parse(body);
       const order = await db.order.update({ where: { id: path.split("/")[2] }, data: { status }, include: { user: true } });
-      await db.emailJob.create({ data: { to: order.user.email, subject: "Kitchen Krisp order update", text: `Your order ${order.id} is now ${status.toLowerCase()}. Contact us by replying to this email with any questions.` } });
+      await db.emailJob.create({ data: { to: order.user.email, subject: "Kitchen Crisp order update", text: `Your order ${order.id} is now ${status.toLowerCase()}. Contact us by replying to this email with any questions.` } });
       await flushEmails(); return NextResponse.json({ ok: true });
     }
     if (path === "admin/emails" && isGet) return NextResponse.json({ pending: await db.emailJob.count({ where: { sentAt: null } }) });
@@ -133,7 +156,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     if (error instanceof z.ZodError) return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     if (error instanceof ApiError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P2002"].includes(error.code)) return NextResponse.json({ error: "Another update happened at the same time. Please retry." }, { status: 409 });
-    console.error("Kitchen Krisp request failed:", error instanceof Error ? error.name : "Unknown error");
+    console.error("Kitchen Crisp request failed:", error instanceof Error ? error.name : "Unknown error");
     return NextResponse.json({ error: "The store is temporarily unavailable. Please try again shortly." }, { status: 503 });
   }
 }

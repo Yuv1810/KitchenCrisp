@@ -20,11 +20,10 @@ function lastCode() { const code = inbox.at(-1)?.match(/code is (\d{6})/); asser
 async function main() {
   assert.ok(["localhost", "127.0.0.1"].includes(new URL(base).hostname), "Tests only run locally");
   assert.equal(new URL(process.env.DATABASE_URL!).port, "55432", "Use the isolated development database");
-  const existingAdmin = await db.user.findUnique({ where: { email: "engyuvrajsingh@gmail.com" } });
-  assert.equal(existingAdmin, null, "Integration tests require an unused admin address in the isolated database");
+  const existingAdmin = await db.user.findUnique({ where: { email: "kitchen5062001crisp@gmail.com" } });
   await new Promise<void>(resolve => smtp.listen(1025, "127.0.0.1", resolve));
   customerEmail = `test-${Date.now()}@example.com`; const password = "TestOnlyPassword123!";
-  const signup = await request("auth/request", "POST", { mode: "signup", email: customerEmail, name: "Test Customer", password }); assert.equal(signup.status, 200);
+  const signup = await request("auth/request", "POST", { mode: "signup", email: customerEmail, password }); assert.equal(signup.status, 200);
   const code = lastCode();
   assert.equal((await request("auth/verify", "POST", { mode: "signup", email: customerEmail, code: "000000" })).status, 400);
   const verified = await request("auth/verify", "POST", { mode: "signup", email: customerEmail, code }); assert.equal(verified.status, 200); const customer = verified.cookie; customerId = verified.data.user.id;
@@ -32,11 +31,14 @@ async function main() {
   assert.equal((await request("admin/products", "GET", undefined, customer)).status, 403, "Customer cannot access admin");
   assert.equal((await request("orders", "POST", {}, "")).status, 401, "Checkout requires authentication");
   const wrongOrigin = await fetch(`${base}/api/cart`, { method: "POST", headers: { Origin: "https://evil.example", "Content-Type": "application/json", Cookie: customer }, body: JSON.stringify({ productId: "ragi-dosa", quantity: 1 }) }); assert.equal(wrongOrigin.status, 403);
-  const admin = await request("auth/request", "POST", { mode: "signup", email: "engyuvrajsingh@gmail.com", name: "Test Admin", password });
-  assert.equal(admin.status, 200);
-  const adminVerify = await request("auth/verify", "POST", { mode: "signup", email: "engyuvrajsingh@gmail.com", code: lastCode() });
-  assert.equal(adminVerify.status, 200); adminId = adminVerify.data.user.id;
-  const adminCookie = adminVerify.cookie;
+  // Verify admin public signup is disallowed
+  const adminSignupAttempt = await request("auth/request", "POST", { mode: "signup", email: "kitchen5062001crisp@gmail.com", password });
+  assert.equal(adminSignupAttempt.status, 400, "Admin signup is disabled");
+  // Admin logs in directly with fixed password
+  const adminLogin = await request("auth/request", "POST", { mode: "login", email: "kitchen5062001crisp@gmail.com", password: process.env.ADMIN_PASSWORD || "KitchenCrisp@5062001" });
+  assert.equal(adminLogin.status, 200);
+  assert.equal(adminLogin.data.directLogin, true);
+  const adminCookie = adminLogin.cookie;
   assert.ok(adminCookie); assert.equal((await request("admin/products", "GET", undefined, adminCookie)).status, 200);
   const product = { name: "Integration Test Premix", description: "A disposable product used to verify price snapshots.", price: 18000, image: "/images/dosa.jpg", category: "Breakfast", weight: "250 g", badge: null, active: true };
   const created = await request("admin/products", "POST", product, adminCookie); assert.equal(created.status, 200); const id = created.data.product.id; productId = id;

@@ -1,0 +1,40 @@
+steps:
+  # 1. Build the container image using the Dockerfile
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/kitchen-crisp:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/kitchen-crisp:latest'
+      - '.'
+
+  # 2. Push the container image to Container Registry / Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/kitchen-crisp:latest'
+
+  # 3. Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'kitchen-crisp'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/kitchen-crisp:latest'
+      - '--region'
+      - 'asia-south1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+
+images:
+  - 'gcr.io/$PROJECT_ID/kitchen-crisp:latest'
+  - 'gcr.io/$PROJECT_ID/kitchen-crisp:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
