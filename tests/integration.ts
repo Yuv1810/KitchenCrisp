@@ -40,7 +40,7 @@ async function main() {
   assert.equal(adminLogin.data.directLogin, true);
   const adminCookie = adminLogin.cookie;
   assert.ok(adminCookie); assert.equal((await request("admin/products", "GET", undefined, adminCookie)).status, 200);
-  const product = { name: "Integration Test Premix", description: "A disposable product used to verify price snapshots.", price: 18000, image: "/images/dosa.jpg", category: "Breakfast", weight: "250 g", badge: null, active: true };
+  const product = { name: "Integration Test Premix", description: "A disposable product used to verify price snapshots.", price: 18000, image: "/images/dosa.jpg", category: "Premixes", weight: "250 g", badge: null, active: true };
   const created = await request("admin/products", "POST", product, adminCookie); assert.equal(created.status, 200); const id = created.data.product.id; productId = id;
   const beforeEmails = inbox.length; assert.equal((await request("cart", "POST", { productId: id, quantity: 2 }, customer)).status, 200); assert.ok(inbox.length > beforeEmails, "Admin receives cart notification");
   const orderBody = { name: "Test Customer", phone: "9876543210", address: "Test address, 123 Test Street", city: "Delhi", state: "Delhi", pincode: "110001", idempotencyKey: randomUUID(), expectedTotal: 36000 };
