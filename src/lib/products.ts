@@ -20,6 +20,6 @@ export const sampleProducts: ShopProduct[] = [
 export const money = (paise: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(paise / 100);
 export function orderTotals(items: { unitPrice: number; quantity: number }[]) {
   const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-  const shipping = subtotal >= 49900 ? 0 : 4900;
-  return { subtotal, shipping, total: subtotal + shipping };
+  const shipping = 0;
+  return { subtotal, shipping: 0, total: subtotal };
 }

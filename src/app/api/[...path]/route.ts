@@ -132,7 +132,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
         const { expectedTotal: _, ...address } = data;
         const order = await tx.order.create({ data: { ...address, userId: user.id, total: totals.total, shipping: totals.shipping, items: { create: items } }, include: { items: true } });
         await tx.cartItem.deleteMany({ where: { userId: user.id } });
-        const text = `Order ${order.id}\n${items.map(x => `${x.productName} x ${x.quantity}: ${money(x.unitPrice * x.quantity)}`).join("\n")}\nDelivery: ${money(totals.shipping)}\nTotal: ${money(totals.total)}\nPayment: Cash on delivery\n\n${data.name}\n${data.phone}\n${data.address}, ${data.city}, ${data.state} ${data.pincode}\n${data.notes || ""}`;
+        const text = `Order ${order.id}\n${items.map(x => `${x.productName} x ${x.quantity}: ${money(x.unitPrice * x.quantity)}`).join("\n")}\nDelivery: ${totals.shipping > 0 ? money(totals.shipping) : "Flexible"}\nTotal: ${money(totals.total)}\nPayment: Cash on delivery\n\n${data.name}\n${data.phone}\n${data.address}, ${data.city}, ${data.state} ${data.pincode}\n${data.notes || ""}`;
         await tx.emailJob.create({ data: { to: user.email, subject: "Your Kitchen Crisp order is received", text: `Thank you! We will contact you by email to confirm delivery.\n\n${text}` } });
         for (const to of adminEmails()) await tx.emailJob.create({ data: { to, subject: "New Kitchen Crisp COD order", text: `Contact customer at ${user.email} to confirm delivery.\n\n${text}` } });
         return order;
