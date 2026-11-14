@@ -10,7 +10,19 @@ import { flushEmails, sendEmail } from "@/lib/email";
 export const runtime = "nodejs";
 const emailSchema = z.string().trim().toLowerCase().email().max(254);
 const passwordSchema = z.string().min(8, "Use at least 8 characters for your password.").max(128);
-const productSchema = z.object({ name: z.string().trim().min(2).max(100), description: z.string().trim().min(10).max(2000), price: z.number().int().min(100).max(10000000), image: z.string().max(2000000).refine(x => /^https:\/\//.test(x) || /^\/images\//.test(x) || /^data:image\/(png|jpeg|webp);base64,/.test(x), "Use an HTTPS image URL or a JPG, PNG or WebP upload."), category: z.enum(productCategories), productType: z.enum(["PREMIX", "READY_TO_EAT"]).default("PREMIX"), weight: z.string().min(1).max(40), badge: z.string().max(40).nullable(), active: z.boolean().optional() });
+const imageValidator = z.string().max(2000000).refine(x => !x || /^https:\/\//.test(x) || /^\/images\//.test(x) || /^data:image\/(png|jpeg|webp);base64,/.test(x), "Use an HTTPS image URL or a JPG, PNG or WebP upload.");
+const productSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  description: z.string().trim().min(10).max(2000),
+  price: z.number().int().min(100).max(10000000),
+  image: z.string().max(2000000).refine(x => /^https:\/\//.test(x) || /^\/images\//.test(x) || /^data:image\/(png|jpeg|webp);base64,/.test(x), "Use an HTTPS image URL or a JPG, PNG or WebP upload."),
+  secondImage: imageValidator.nullable().optional().transform(x => x || null),
+  category: z.enum(productCategories),
+  productType: z.enum(["PREMIX", "READY_TO_EAT"]).default("PREMIX"),
+  weight: z.string().min(1).max(40),
+  badge: z.string().max(40).nullable(),
+  active: z.boolean().optional()
+});
 async function issueOtp(email: string, purpose: OtpPurpose) {
   const otp = String(randomInt(100000, 1000000));
   await db.otp.upsert({ where: { email_purpose: { email, purpose } }, create: { email, purpose, codeHash: hashToken(`${email}:${purpose}:${otp}`), expiresAt: new Date(Date.now() + 10 * 60000) }, update: { codeHash: hashToken(`${email}:${purpose}:${otp}`), attempts: 0, expiresAt: new Date(Date.now() + 10 * 60000) } });

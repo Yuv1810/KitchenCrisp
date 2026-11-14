@@ -66,6 +66,7 @@ model Product {
   description String
   price Int
   image String
+  secondImage String?
   category String
   productType ProductType @default(PREMIX)
   weight String
