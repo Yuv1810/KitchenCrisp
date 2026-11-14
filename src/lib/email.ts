@@ -15,7 +15,12 @@ export async function sendEmail(to: string, subject: string, text: string) {
     throw new ApiError(503, "Email delivery is not configured. Please contact the store.");
   }
   const transport = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 587), secure: process.env.SMTP_PORT === "465", auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }, connectionTimeout: 10000, socketTimeout: 15000 });
-  await transport.sendMail({ from: process.env.EMAIL_FROM, to, subject, text });
+  try {
+    await transport.sendMail({ from: process.env.EMAIL_FROM, to, subject, text });
+  } catch (err) {
+    console.error("Failed to send email to", to, ":", err);
+    throw new ApiError(500, `Email delivery failed: ${err instanceof Error ? err.message : "SMTP error"}`);
+  }
 }
 export async function flushEmails() {
   const jobs = await db.emailJob.findMany({ where: { sentAt: null, attempts: { lt: 10 } }, orderBy: { createdAt: "asc" }, take: 10 });

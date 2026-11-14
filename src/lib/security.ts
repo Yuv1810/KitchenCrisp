@@ -20,10 +20,11 @@ export async function passwordMatches(password: string, stored: string) {
   const expected = Buffer.from(hex, "hex");
   return expected.length === key.length && timingSafeEqual(key, expected);
 }
-export const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || process.env.ADMIN_EMAILS || "kitchen5062001crisp@gmail.com").split(",")[0].trim().toLowerCase();
-export function adminEmails() {
-  return [ADMIN_EMAIL];
+export function adminEmails(): string[] {
+  const env = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || "kitchen5062001crisp@gmail.com,engyuvrajsingh@gmail.com";
+  return env.split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
 }
+export const ADMIN_EMAIL = adminEmails()[0];
 export function adminFixedPassword() {
   return process.env.ADMIN_PASSWORD || "KitchenCrisp@5062001";
 }

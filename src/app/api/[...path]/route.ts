@@ -173,7 +173,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     if (error instanceof z.ZodError) return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     if (error instanceof ApiError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P2002"].includes(error.code)) return NextResponse.json({ error: "Another update happened at the same time. Please retry." }, { status: 409 });
-    console.error("Kitchen Crisp request failed:", error instanceof Error ? error.name : "Unknown error");
+    console.error("Kitchen Crisp request failed:", error instanceof Error ? (error.stack || error.message) : error);
     return NextResponse.json({ error: "The store is temporarily unavailable. Please try again shortly." }, { status: 503 });
   }
 }
