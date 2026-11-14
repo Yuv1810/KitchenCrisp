@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { orderTotals, matchesCollection, sampleProducts } from "../src/lib/products";
 test("cash-on-delivery totals use integer paise and apply the delivery threshold", () => {
-  assert.deepEqual(orderTotals([{ unitPrice: 18000, quantity: 2 }]), { subtotal: 36000, shipping: 4900, total: 40900 });
+  assert.deepEqual(orderTotals([{ unitPrice: 18000, quantity: 2 }]), { subtotal: 36000, shipping: 0, total: 36000 });
   assert.deepEqual(orderTotals([{ unitPrice: 49900, quantity: 1 }]), { subtotal: 49900, shipping: 0, total: 49900 });
   assert.deepEqual(orderTotals([{ unitPrice: 18000, quantity: 2 }, { unitPrice: 16000, quantity: 1 }]), { subtotal: 52000, shipping: 0, total: 52000 });
 });

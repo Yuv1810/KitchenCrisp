@@ -36,8 +36,25 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
     const isGet = req.method === "GET";
     if (!isGet) {
       const origin = req.headers.get("origin");
-      const expected = new URL(process.env.APP_URL || req.url).origin;
-      if (origin !== expected) throw new ApiError(403, "Request origin is not allowed.");
+      const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+      const proto = req.headers.get("x-forwarded-proto") || (req.url.startsWith("https") ? "https" : "http");
+      const allowedOrigins = new Set<string>();
+
+      if (process.env.APP_URL) {
+        try {
+          allowedOrigins.add(new URL(process.env.APP_URL).origin);
+        } catch {}
+      }
+      if (host) {
+        allowedOrigins.add(`${proto}://${host}`);
+      }
+      try {
+        allowedOrigins.add(new URL(req.url).origin);
+      } catch {}
+
+      if (!origin || !allowedOrigins.has(origin)) {
+        throw new ApiError(403, "Request origin is not allowed.");
+      }
     }
     if (path === "products" && isGet) {
       if (!databaseConfigured()) return NextResponse.json({ products: sampleProducts, preview: true });
