@@ -21,7 +21,7 @@ export async function passwordMatches(password: string, stored: string) {
   return expected.length === key.length && timingSafeEqual(key, expected);
 }
 export function adminEmails(): string[] {
-  const env = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || "kitchen5062001crisp@gmail.com,engyuvrajsingh@gmail.com";
+  const env = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || "kitchen5062001crisp@gmail.com";
   return env.split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
 }
 export const ADMIN_EMAIL = adminEmails()[0];
