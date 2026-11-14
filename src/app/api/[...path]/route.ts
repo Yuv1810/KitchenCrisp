@@ -109,7 +109,7 @@ async function handle(req: NextRequest, context: { params: Promise<{ path: strin
         if (!user || !await passwordMatches(data.password || "", user.passwordHash)) throw new ApiError(400, "Email or password is incorrect.");
         await issueOtp(data.email, "LOGIN");
       } else if (user?.verified) await issueOtp(data.email, "RESET");
-      return NextResponse.json({ ok: true, message: "If your email is eligible, a verification code has been sent." });
+      return NextResponse.json({ ok: true, message: "If your email is eligible, a verification code has been sent. Please check your spam folder just in case." });
     }
     if (path === "auth/verify" && req.method === "POST") {
       const data = z.object({ email: emailSchema, code: z.string().regex(/^\d{6}$/), mode: z.enum(["signup", "login", "reset"]), password: passwordSchema.optional() }).parse(body);
